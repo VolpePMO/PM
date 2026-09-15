@@ -1,0 +1,1 @@
+ALTER TABLE public.backlog_subtasks ADD COLUMN IF NOT EXISTS story_points integer;

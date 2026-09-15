@@ -1,0 +1,19 @@
+# Deploy do Valori PM na Netlify.
+#
+# O build gera o site estático em .output/public e a função de SSR em
+# .netlify/functions-internal — o preset "netlify" do Nitro (definido em
+# vite.config.ts) cuida disso. Nada aqui precisa mudar entre ambientes.
+
+[build]
+  command = "npm run build"
+  publish = ".output/public"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+# As variáveis do Supabase entram em Site configuration → Environment
+# variables, não aqui: este arquivo vai para o repositório.
+#   VITE_SUPABASE_URL
+#   VITE_SUPABASE_PUBLISHABLE_KEY
+#   SUPABASE_URL                  (mesmo valor, usado no SSR)
+#   SUPABASE_PUBLISHABLE_KEY      (mesmo valor, usado no SSR)

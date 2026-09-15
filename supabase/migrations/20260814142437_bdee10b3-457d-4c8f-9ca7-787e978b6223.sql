@@ -1,0 +1,6 @@
+ALTER TABLE public.backlog_items
+  DROP COLUMN IF EXISTS rice_score,
+  DROP COLUMN IF EXISTS reach,
+  DROP COLUMN IF EXISTS impact,
+  DROP COLUMN IF EXISTS confidence,
+  DROP COLUMN IF EXISTS effort;
