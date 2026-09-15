@@ -1,0 +1,372 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * Design system definition.
+ *
+ * The @theme inline block maps CSS custom properties to Tailwind utility
+ * classes (e.g. --color-primary -> bg-primary, text-primary).
+ *
+ * The :root and .dark blocks define the actual color values using oklch.
+ * All colors MUST use oklch format.
+ *
+ * To add a new semantic color:
+ * 1. Add the variable to :root (light value) and .dark (dark value)
+ * 2. Register it in @theme inline as --color-<name>: var(--<name>)
+ */
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --radius-4xl: calc(var(--radius) + 16px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-gold: var(--gold);
+  --color-gold-foreground: var(--gold-foreground);
+  --color-brand-dark: var(--brand-dark);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-ring-offset-background: var(--background);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+@theme inline {
+  --color-tag-feature: var(--tag-feature);
+  --color-tag-feature-foreground: var(--tag-feature-foreground);
+  --color-tag-qol: var(--tag-qol);
+  --color-tag-qol-foreground: var(--tag-qol-foreground);
+  --color-tag-bug: var(--tag-bug);
+  --color-tag-bug-foreground: var(--tag-bug-foreground);
+  --color-tag-idea: var(--tag-idea);
+  --color-tag-idea-foreground: var(--tag-idea-foreground);
+  --color-tag-planned: var(--tag-planned);
+  --color-tag-planned-foreground: var(--tag-planned-foreground);
+  --color-tag-progress: var(--tag-progress);
+  --color-tag-progress-foreground: var(--tag-progress-foreground);
+  --color-tag-done: var(--tag-done);
+  --color-tag-done-foreground: var(--tag-done-foreground);
+  --color-tag-neutral: var(--tag-neutral);
+  --color-tag-neutral-foreground: var(--tag-neutral-foreground);
+  --color-tag-easy: var(--tag-easy);
+  --color-tag-easy-foreground: var(--tag-easy-foreground);
+  --color-tag-medium: var(--tag-medium);
+  --color-tag-medium-foreground: var(--tag-medium-foreground);
+  --color-tag-hard: var(--tag-hard);
+  --color-tag-hard-foreground: var(--tag-hard-foreground);
+}
+
+/*
+ * Paleta do Portal Valori.
+ *
+ * Os valores abaixo seguem o Portal do Cliente: fundo verde muito claro,
+ * cartões brancos, verde escuro na marca e âmbar como único destaque. Como os
+ * tokens semânticos apontam para eles, todo componente do design system herda
+ * essa identidade sem precisar de classe por página.
+ *
+ * Uma decisão importante: --accent aqui é a superfície de hover (verde bem
+ * claro), como o shadcn espera. O âmbar da marca mora em --gold, usado só nos
+ * pontos de destaque (linha do gráfico, barras do logo, avatar, selos).
+ */
+:root {
+  --radius: 0.875rem;
+  --background: oklch(0.973 0.006 165);
+  --foreground: oklch(0.23 0.012 170);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.23 0.012 170);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.23 0.012 170);
+  --primary: oklch(0.45 0.093 163);
+  --primary-foreground: oklch(0.99 0.004 160);
+  --secondary: oklch(0.955 0.011 162);
+  --secondary-foreground: oklch(0.31 0.045 168);
+  --muted: oklch(0.968 0.006 165);
+  --muted-foreground: oklch(0.58 0.011 165);
+  --accent: oklch(0.955 0.011 162);
+  --accent-foreground: oklch(0.31 0.045 168);
+  --gold: oklch(0.775 0.119 71);
+  --gold-foreground: oklch(0.28 0.045 70);
+  --brand-dark: oklch(0.31 0.045 168);
+  --destructive: oklch(0.49 0.176 28);
+  --destructive-foreground: oklch(0.99 0.003 160);
+  --border: oklch(0.925 0.008 163);
+  --input: oklch(0.925 0.008 163);
+  --ring: oklch(0.45 0.093 163);
+  --chart-1: oklch(0.45 0.093 163);
+  --chart-2: oklch(0.775 0.119 71);
+  --chart-3: oklch(0.52 0.084 232);
+  --chart-4: oklch(0.55 0.106 320);
+  --chart-5: oklch(0.6 0.112 35);
+  --sidebar: oklch(1 0 0);
+  --sidebar-foreground: oklch(0.23 0.012 170);
+  --sidebar-primary: oklch(0.45 0.093 163);
+  --sidebar-primary-foreground: oklch(0.99 0.004 160);
+  --sidebar-accent: oklch(0.955 0.011 162);
+  --sidebar-accent-foreground: oklch(0.31 0.045 168);
+  --sidebar-border: oklch(0.935 0.007 163);
+  --sidebar-ring: oklch(0.45 0.093 163);
+}
+
+:root {
+  --tag-feature: oklch(0.93 0.06 175);
+  --tag-feature-foreground: oklch(0.34 0.06 175);
+  --tag-qol: oklch(0.93 0.07 260);
+  --tag-qol-foreground: oklch(0.36 0.09 260);
+  --tag-bug: oklch(0.93 0.06 25);
+  --tag-bug-foreground: oklch(0.42 0.16 25);
+  --tag-idea: oklch(0.95 0.02 165);
+  --tag-idea-foreground: oklch(0.42 0.02 170);
+  --tag-planned: oklch(0.93 0.07 70);
+  --tag-planned-foreground: oklch(0.42 0.1 60);
+  --tag-progress: oklch(0.92 0.08 230);
+  --tag-progress-foreground: oklch(0.38 0.11 240);
+  --tag-done: oklch(0.9 0.1 150);
+  --tag-done-foreground: oklch(0.34 0.09 155);
+  --tag-neutral: oklch(0.95 0.01 165);
+  --tag-neutral-foreground: oklch(0.4 0.02 170);
+  --tag-easy: oklch(0.93 0.08 145);
+  --tag-easy-foreground: oklch(0.36 0.08 150);
+  --tag-medium: oklch(0.94 0.07 85);
+  --tag-medium-foreground: oklch(0.4 0.09 70);
+  --tag-hard: oklch(0.93 0.06 20);
+  --tag-hard-foreground: oklch(0.42 0.14 25);
+}
+
+/*
+ * Modo escuro: passos próprios tirados das mesmas famílias de cor, e não uma
+ * inversão automática do claro. O verde da marca precisa clarear para manter
+ * contraste sobre fundo escuro, e o âmbar precisa perder um pouco de croma
+ * para não vibrar.
+ */
+.dark {
+  --background: oklch(0.19 0.015 170);
+  --foreground: oklch(0.95 0.008 162);
+  --card: oklch(0.235 0.017 170);
+  --card-foreground: oklch(0.95 0.008 162);
+  --popover: oklch(0.235 0.017 170);
+  --popover-foreground: oklch(0.95 0.008 162);
+  --primary: oklch(0.68 0.106 163);
+  --primary-foreground: oklch(0.17 0.02 170);
+  --secondary: oklch(0.285 0.021 168);
+  --secondary-foreground: oklch(0.93 0.012 162);
+  --muted: oklch(0.275 0.018 170);
+  --muted-foreground: oklch(0.72 0.014 165);
+  --accent: oklch(0.285 0.021 168);
+  --accent-foreground: oklch(0.93 0.012 162);
+  --gold: oklch(0.78 0.112 71);
+  --gold-foreground: oklch(0.2 0.03 70);
+  --brand-dark: oklch(0.88 0.03 165);
+  --destructive: oklch(0.66 0.158 28);
+  --destructive-foreground: oklch(0.99 0.003 160);
+  --border: oklch(1 0 0 / 11%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.68 0.106 163);
+  --chart-1: oklch(0.68 0.106 163);
+  --chart-2: oklch(0.78 0.112 71);
+  --chart-3: oklch(0.68 0.086 232);
+  --chart-4: oklch(0.7 0.104 320);
+  --chart-5: oklch(0.72 0.11 35);
+  --sidebar: oklch(0.215 0.016 170);
+  --sidebar-foreground: oklch(0.95 0.008 162);
+  --sidebar-primary: oklch(0.68 0.106 163);
+  --sidebar-primary-foreground: oklch(0.17 0.02 170);
+  --sidebar-accent: oklch(0.285 0.021 168);
+  --sidebar-accent-foreground: oklch(0.93 0.012 162);
+  --sidebar-border: oklch(1 0 0 / 9%);
+  --sidebar-ring: oklch(0.68 0.106 163);
+}
+
+.dark {
+  --tag-feature: oklch(0.32 0.05 175);
+  --tag-feature-foreground: oklch(0.9 0.06 175);
+  --tag-qol: oklch(0.32 0.06 260);
+  --tag-qol-foreground: oklch(0.9 0.06 260);
+  --tag-bug: oklch(0.33 0.09 25);
+  --tag-bug-foreground: oklch(0.9 0.07 25);
+  --tag-idea: oklch(0.3 0.02 170);
+  --tag-idea-foreground: oklch(0.88 0.02 170);
+  --tag-planned: oklch(0.34 0.07 70);
+  --tag-planned-foreground: oklch(0.9 0.07 75);
+  --tag-progress: oklch(0.32 0.07 235);
+  --tag-progress-foreground: oklch(0.89 0.07 235);
+  --tag-done: oklch(0.32 0.07 152);
+  --tag-done-foreground: oklch(0.89 0.09 150);
+  --tag-neutral: oklch(0.3 0.015 170);
+  --tag-neutral-foreground: oklch(0.87 0.015 170);
+  --tag-easy: oklch(0.32 0.07 148);
+  --tag-easy-foreground: oklch(0.89 0.08 148);
+  --tag-medium: oklch(0.34 0.07 80);
+  --tag-medium-foreground: oklch(0.9 0.07 80);
+  --tag-hard: oklch(0.33 0.08 22);
+  --tag-hard-foreground: oklch(0.9 0.07 22);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+  }
+}
+
+@media print {
+  body {
+    background: #fff;
+  }
+  header,
+  nav,
+  aside,
+  [data-print-hide] {
+    display: none !important;
+  }
+  main {
+    padding: 0 !important;
+  }
+}
+
+/* --- Esteira de On-Boarding (Portal do Parceiro) --- */
+:root {
+  --esteira-green: oklch(0.45 0.093 163);
+  --esteira-gold: oklch(0.775 0.119 71);
+  --esteira-done: oklch(0.54 0.098 158);
+  --esteira-late: oklch(0.5 0.148 33);
+  --esteira-surface: oklch(1 0 0);
+  --esteira-bg: oklch(0.977 0.004 160);
+  --esteira-line: oklch(0.91 0.008 165);
+  --esteira-soft: oklch(0.5 0.016 170);
+  --esteira-ink: oklch(0.22 0.03 172);
+  --esteira-col: oklch(0.962 0.006 162);
+}
+
+.dark {
+  --esteira-green: oklch(0.68 0.106 163);
+  --esteira-gold: oklch(0.78 0.112 71);
+  --esteira-done: oklch(0.63 0.11 158);
+  --esteira-late: oklch(0.62 0.16 33);
+  --esteira-surface: oklch(0.22 0.022 172);
+  --esteira-bg: oklch(0.17 0.018 172);
+  --esteira-line: oklch(1 0 0 / 12%);
+  --esteira-soft: oklch(0.73 0.02 165);
+  --esteira-ink: oklch(0.15 0.02 172);
+  --esteira-col: oklch(0.2 0.02 172);
+}
+
+@theme inline {
+  --color-esteira-green: var(--esteira-green);
+  --color-esteira-gold: var(--esteira-gold);
+  --color-esteira-done: var(--esteira-done);
+  --color-esteira-late: var(--esteira-late);
+  --color-esteira-surface: var(--esteira-surface);
+  --color-esteira-bg: var(--esteira-bg);
+  --color-esteira-line: var(--esteira-line);
+  --color-esteira-soft: var(--esteira-soft);
+  --color-esteira-ink: var(--esteira-ink);
+  --color-esteira-col: var(--esteira-col);
+  --font-display: "Archivo", ui-sans-serif, system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-numeric: "IBM Plex Mono", ui-monospace, monospace;
+  /* Tipografia do Portal: uma grotesca neutra em toda a interface. */
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+}
+
+/* --- Portal Valori (Visão Geral / Kanban) --- */
+:root {
+  --portal-bg: #f1f5f3;
+  --portal-bg-2: #f7f9f8;
+  --portal-surface: #ffffff;
+  --portal-inner: #f8faf9;
+  --portal-border: #e2e8e4;
+  --portal-text: #1c1f1d;
+  --portal-muted: #7e8783;
+  --portal-label: #98a09c;
+  --portal-green: #0f6e4c;
+  --portal-dark: #123a32;
+  --portal-amber: #e9a23b;
+  --portal-red: #b3261e;
+  --portal-divider: #eaefec;
+  --portal-mint: #edf3ef;
+}
+
+.dark {
+  --portal-bg: #101614;
+  --portal-bg-2: #131a18;
+  --portal-surface: #171f1c;
+  --portal-inner: #1b2422;
+  --portal-border: #26312d;
+  --portal-text: #eef3f0;
+  --portal-muted: #9aa5a0;
+  --portal-label: #7f8b86;
+  --portal-green: #3fa87c;
+  --portal-dark: #123a32;
+  --portal-amber: #e9a23b;
+  --portal-red: #e2685f;
+  --portal-divider: #232e2a;
+  --portal-mint: #1b2a24;
+}
+
+@theme inline {
+  --color-portal-bg: var(--portal-bg);
+  --color-portal-bg-2: var(--portal-bg-2);
+  --color-portal-surface: var(--portal-surface);
+  --color-portal-inner: var(--portal-inner);
+  --color-portal-border: var(--portal-border);
+  --color-portal-text: var(--portal-text);
+  --color-portal-muted: var(--portal-muted);
+  --color-portal-label: var(--portal-label);
+  --color-portal-green: var(--portal-green);
+  --color-portal-dark: var(--portal-dark);
+  --color-portal-amber: var(--portal-amber);
+  --color-portal-red: var(--portal-red);
+  --color-portal-divider: var(--portal-divider);
+  --color-portal-mint: var(--portal-mint);
+  --shadow-portal: 0 1px 2px rgba(18, 58, 50, 0.04);
+}
+
+@utility tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+
+@media (prefers-reduced-motion: reduce) {
+  [data-esteira] *,
+  [data-esteira] {
+    transition: none !important;
+    animation: none !important;
+  }
+}
