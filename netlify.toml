@@ -11,6 +11,14 @@
 [build.environment]
   NODE_VERSION = "22"
 
+  # O npm 10.9.x que vem com o Node 22 tem um bug no resolvedor de dependências
+  # ("Cannot read properties of null (reading 'edgesOut')") que derruba o
+  # `npm install` deste projeto. Com o package-lock.json commitado a Netlify roda
+  # `npm ci`, que lê o lock direto e não passa por esse caminho — mas pedir o npm
+  # 11 aqui cobre também o caso de o lock sair de sincronia com o package.json e
+  # a Netlify cair de volta no `npm install`.
+  NPM_VERSION = "11"
+
 # As variáveis do Supabase entram em Site configuration → Environment
 # variables, não aqui: este arquivo vai para o repositório.
 #   VITE_SUPABASE_URL
