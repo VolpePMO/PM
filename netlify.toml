@@ -1,12 +1,17 @@
 # Deploy do Valori PM na Netlify.
 #
-# O build gera o site estático em .output/public e a função de SSR em
-# .netlify/functions-internal — o preset "netlify" do Nitro (definido em
-# vite.config.ts) cuida disso. Nada aqui precisa mudar entre ambientes.
+# O preset "netlify" do Nitro (definido em vite.config.ts) separa a saída em
+# dois lugares: os arquivos estáticos vão para `dist/` e a função de SSR para
+# `.netlify/functions-internal/server/`. Por isso `publish` é "dist" — só o
+# preset "node-server" usa `.output/public`.
+#
+# Não é preciso redirect de catch-all: a própria função declara
+# `config = { path: "/*", preferStatic: true }`, então a Netlify serve o arquivo
+# estático quando ele existe e cai na função em todo o resto.
 
 [build]
   command = "npm run build"
-  publish = ".output/public"
+  publish = "dist"
 
 [build.environment]
   NODE_VERSION = "22"
