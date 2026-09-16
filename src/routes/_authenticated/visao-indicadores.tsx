@@ -22,7 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { COD_EC_OPTIONS, PARTNERS, formatBRL, type TableRow } from "@/lib/indicadores-mock";
+import { PARTNERS, TODOS_ECS, formatBRL, type TableRow } from "@/lib/indicadores-mock";
 import { PageHeader } from "@/components/PageHeader";
 
 export const Route = createFileRoute("/_authenticated/visao-indicadores")({
@@ -51,13 +51,37 @@ function IndicadoresPage() {
   const [empresa, setEmpresa] = useState("");
   const [inicio, setInicio] = useState("2026-09-01");
   const [fim, setFim] = useState("2026-09-30");
-  const [codEc, setCodEc] = useState("Todos");
+  const [codEc, setCodEc] = useState<string>(TODOS_ECS);
   const [partnerId, setPartnerId] = useState(PARTNERS[0]!.id);
 
   const partner = useMemo(
     () => PARTNERS.find((p) => p.id === partnerId) ?? PARTNERS[0]!,
     [partnerId],
   );
+
+  const ecSelecionado = useMemo(
+    () => partner.ecs.find((ec) => ec.code === codEc) ?? null,
+    [partner, codEc],
+  );
+
+  const metrics = ecSelecionado ? ecSelecionado.metrics : partner.total;
+
+  const ecRows: TableRow[] = useMemo(() => {
+    const total = partner.ecs.reduce((acc, ec) => acc + tpvDe(ec.metrics.daily), 0);
+    return partner.ecs.map((ec) => {
+      const tpv = tpvDe(ec.metrics.daily);
+      return {
+        label: `${ec.code} — ${ec.nome}`,
+        tpv,
+        share: total > 0 ? Math.round((tpv / total) * 1000) / 10 : 0,
+      };
+    });
+  }, [partner]);
+
+  function trocarParceiro(id: string) {
+    setPartnerId(id);
+    setCodEc(TODOS_ECS);
+  }
 
   const atualizadoEm = useMemo(
     () => new Date().toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "medium" }),
@@ -133,13 +157,14 @@ function IndicadoresPage() {
         <div className="space-y-1.5">
           <Label className="text-xs uppercase tracking-wide text-muted-foreground">Cod EC</Label>
           <Select value={codEc} onValueChange={setCodEc}>
-            <SelectTrigger className="w-[160px]">
+            <SelectTrigger className="w-[260px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {COD_EC_OPTIONS.map((c) => (
-                <SelectItem key={c} value={c}>
-                  {c}
+              <SelectItem value={TODOS_ECS}>Todos os ECs (consolidado)</SelectItem>
+              {partner.ecs.map((ec) => (
+                <SelectItem key={ec.code} value={ec.code}>
+                  {ec.code} — {ec.nome}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -148,7 +173,7 @@ function IndicadoresPage() {
 
         <div className="space-y-1.5">
           <Label className="text-xs uppercase tracking-wide text-muted-foreground">Parceiro</Label>
-          <Select value={partnerId} onValueChange={setPartnerId}>
+          <Select value={partnerId} onValueChange={trocarParceiro}>
             <SelectTrigger className="w-[180px]">
               <SelectValue />
             </SelectTrigger>
@@ -163,9 +188,20 @@ function IndicadoresPage() {
         </div>
       </Card>
 
+      {/* Contexto da seleção */}
+      <p className="text-xs text-muted-foreground">
+        Exibindo{" "}
+        <span className="font-medium text-foreground">
+          {ecSelecionado
+            ? `EC ${ecSelecionado.code} — ${ecSelecionado.nome}`
+            : `consolidado dos ${partner.ecs.length} ECs`}
+        </span>{" "}
+        de {partner.label}.
+      </p>
+
       {/* Indicadores */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6">
-        {partner.stats.map((stat) => (
+        {metrics.stats.map((stat) => (
           <Card key={stat.key} className="border-l-2 border-l-gold p-4">
             <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
               {stat.label}
@@ -193,7 +229,7 @@ function IndicadoresPage() {
         <p className="text-[11px] uppercase tracking-wide text-muted-foreground">TPV Diário</p>
         <div className="mt-3 h-[280px] w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={partner.daily} margin={{ top: 8, right: 12, bottom: 0, left: 8 }}>
+            <LineChart data={metrics.daily} margin={{ top: 8, right: 12, bottom: 0, left: 8 }}>
               <CartesianGrid vertical={false} strokeOpacity={0.15} />
               <XAxis
                 dataKey="day"
@@ -239,8 +275,18 @@ function IndicadoresPage() {
 
       {/* Tabelas */}
       <div className="grid gap-4 lg:grid-cols-2">
-        <ShareTable title="Bandeira" firstCol="Bandeira" rows={partner.bandeiras} />
-        <ShareTable title="Tipo de compra" firstCol="Modalidade" rows={partner.tiposCompra} />
+        <ShareTable title="Bandeira" firstCol="Bandeira" rows={metrics.bandeiras} />
+        <ShareTable title="Tipo de compra" firstCol="Modalidade" rows={metrics.tiposCompra} />
+      </div>
+
+      {/* Quebra por EC */}
+      <div className="grid gap-4">
+        <ShareTable
+          title={`Códigos de EC de ${partner.label}`}
+          firstCol="Cod EC"
+          rows={ecRows}
+          highlight={ecSelecionado?.code}
+        />
       </div>
 
       <p className="text-right text-xs text-muted-foreground">Atualizado em: {atualizadoEm}</p>
@@ -248,14 +294,20 @@ function IndicadoresPage() {
   );
 }
 
+function tpvDe(daily: { tpv: number }[]) {
+  return daily.reduce((acc, d) => acc + d.tpv, 0);
+}
+
 function ShareTable({
   title,
   firstCol,
   rows,
+  highlight,
 }: {
   title: string;
   firstCol: string;
   rows: TableRow[];
+  highlight?: string | undefined;
 }) {
   return (
     <Card className="p-4">
@@ -270,7 +322,14 @@ function ShareTable({
         </thead>
         <tbody>
           {rows.map((row) => (
-            <tr key={row.label} className="border-b last:border-0">
+            <tr
+              key={row.label}
+              className={
+                highlight && row.label.startsWith(highlight)
+                  ? "border-b bg-gold/10 font-medium last:border-0"
+                  : "border-b last:border-0"
+              }
+            >
               <td className="py-2">{row.label}</td>
               <td className="py-2 text-right tabular-nums">{formatBRL(row.tpv)}</td>
               <td className="py-2 text-right tabular-nums text-muted-foreground">
