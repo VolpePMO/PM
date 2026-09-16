@@ -22,9 +22,16 @@ cp .env.example .env # preencha as variáveis do Supabase
 npm run dev          # http://localhost:5173
 ```
 
-O repositório vai sem lockfile de propósito: o `package-lock.json` (ou
-`bun.lock`) que o seu primeiro `install` gerar é o que deve ser commitado, para
-o build da Netlify usar exatamente as mesmas versões que você testou.
+O `package-lock.json` **precisa ficar commitado**, e não é só por
+reprodutibilidade: o npm 10.9.x que acompanha o Node 22 tem um bug no resolvedor
+de dependências que derruba o `npm install` deste projeto com
+`Cannot read properties of null (reading 'edgesOut')`. Com o lock no
+repositório, a Netlify roda `npm ci`, que lê o lock direto e não passa por esse
+caminho. O `netlify.toml` ainda pede `NPM_VERSION = "11"` como segunda camada,
+para o caso de o lock sair de sincronia com o `package.json`.
+
+Se precisar regenerar o lock, use npm 11 ou mais novo (`npm i -g npm@11`) —
+no npm 10.9.x o próprio `npm install` local falha com o mesmo erro.
 
 Outros comandos:
 
@@ -43,21 +50,32 @@ Estão documentadas em `.env.example`. Em resumo:
 | --- | --- |
 | `VITE_SUPABASE_URL` / `VITE_SUPABASE_PUBLISHABLE_KEY` | Conexão do navegador com o Supabase |
 | `SUPABASE_URL` / `SUPABASE_PUBLISHABLE_KEY` | Mesmos valores, lidos no SSR |
+| `SUPABASE_SERVICE_ROLE_KEY` | Painel administrativo: criar e remover contas, alterar senhas |
 | `VITE_ENRIQUECIMENTO_API_URL` | Serviço que faz a ponte com Receita, ABECS e ZapSign (opcional) |
 
 A chave *publishable* é pública por natureza — ela vai no bundle do navegador.
 Quem protege os dados é o Row Level Security do banco, não o segredo da chave.
-Nunca coloque a `service_role` em variável `VITE_*`.
+
+A `service_role` é o oposto: ela **ignora o RLS inteiro** e vale como senha
+mestra do banco. Fica só no servidor, sem o prefixo `VITE_`, e é o que permite
+ao painel administrativo criar conta, remover conta e trocar a senha de alguém.
+Sem ela essas telas específicas falham; o resto do app funciona normalmente.
 
 ## Publicando na Netlify
 
 1. Suba o repositório e conecte-o em **Add new site → Import an existing project**.
 2. O `netlify.toml` já define o comando (`npm run build`) e a pasta publicada
-   (`.output/public`). Não é preciso configurar nada na interface.
+   (`dist`). Não é preciso configurar nada na interface.
 3. Em **Site configuration → Environment variables**, cadastre as quatro
    variáveis do Supabase da tabela acima (e, se for usar outro serviço de
    enriquecimento, também a quinta).
 4. Faça o deploy.
+
+Um detalhe que vale saber antes de mexer aqui: **cada preset do Nitro tem um
+layout de saída diferente**. O preset `netlify` escreve os arquivos estáticos em
+`dist/` e a função de SSR em `.netlify/functions-internal/server/`; o preset
+`node-server` é que usa `.output/`. Trocar de preset sem trocar o `publish` é o
+caminho mais curto para um "Deploy directory does not exist".
 
 **Outro provedor?** O alvo do build vem de `NITRO_PRESET`, lido em
 `vite.config.ts`. Para a Vercel, `NITRO_PRESET=vercel npm run build`; para um
@@ -158,6 +176,37 @@ o código dele está no repositório `Abecsisbad` (FastAPI, publicado no Render)
   como impedem o sistema de ficar sem nenhum administrador ativo.
 
 Todas essas regras são aplicadas no banco por RLS, não apenas na interface.
+
+## Senhas
+
+Quem define senha de outra pessoa é só `joao.neto@valori.com.vc`. A verificação
+acontece no servidor, em `src/lib/users-admin.functions.ts`: o middleware valida
+o JWT, e `assertOwner` compara o e-mail que veio dentro do token — nunca algo
+enviado pelo cliente. Esconder o botão na interface é conveniência, não
+segurança.
+
+Em `/admin/usuarios` existem duas operações:
+
+**Alterar a senha de uma conta.** Botão "Senha" na linha da pessoa. Por padrão
+marca a conta para trocar de senha no próximo acesso; dá para desmarcar. Ninguém
+é avisado por e-mail — combine a senha por um canal seguro.
+
+**Resetar todas as senhas.** No fim da página, em vermelho. Aplica a mesma senha
+temporária a todas as contas, inclusive a de quem está clicando, e liga a troca
+obrigatória para todo mundo. Pede a palavra `RESETAR` digitada à mão, porque não
+tem desfazer. O relatório mostra quantas contas foram redefinidas e quais
+falharam.
+
+A trava do primeiro acesso é o campo `profiles.must_change_password`, lido em
+`_authenticated/route.tsx`: com ele ligado, qualquer rota protegida redireciona
+para `/trocar-senha`. Uma sessão já aberta não cai na hora — a pessoa esbarra na
+trava na primeira navegação. Se precisar derrubar as sessões imediatamente,
+use **Authentication → Users** no painel do Supabase.
+
+Senhas definidas por outra pessoa exigem 8 caracteres, e não os 6 que o Supabase
+aceita por padrão: elas trafegam por chat ou e-mail e, no reset em massa, valem
+para várias contas ao mesmo tempo. A regra mora em `passwordProblem`, em
+`domain.ts`, com testes.
 
 ## Decisões de arquitetura
 

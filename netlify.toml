@@ -30,3 +30,7 @@
 #   VITE_SUPABASE_PUBLISHABLE_KEY
 #   SUPABASE_URL                  (mesmo valor, usado no SSR)
 #   SUPABASE_PUBLISHABLE_KEY      (mesmo valor, usado no SSR)
+#   SUPABASE_SERVICE_ROLE_KEY     (só servidor — sustenta o painel administrativo)
+#
+# A service_role ignora o RLS inteiro. Sem o prefixo VITE_ ela fica só no
+# servidor; com o prefixo, iria para o bundle do navegador e vazaria o banco.
