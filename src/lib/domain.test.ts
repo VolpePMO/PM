@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
+  MIN_TEMP_PASSWORD_LENGTH,
   groupNavPages,
   keyResultProgress,
   navGroupFor,
   objectiveProgress,
+  passwordProblem,
   visibleNavPages,
   type AppPage,
 } from "./domain";
@@ -188,5 +190,35 @@ describe("agrupamento do menu lateral", () => {
     expect(navGroupFor("/rota-nova")).toBe("Provas de conceito");
     const grupos = groupNavPages([{ path: "/rota-nova" }]);
     expect(grupos).toHaveLength(1);
+  });
+});
+
+describe("validação de senha", () => {
+  it("recusa senha vazia", () => {
+    expect(passwordProblem("")).toBe("Informe uma senha.");
+    expect(passwordProblem("   ")).toBe("Informe uma senha.");
+  });
+
+  it("cobra o mínimo padrão de 6 caracteres", () => {
+    expect(passwordProblem("12345")).toBe("A senha deve ter pelo menos 6 caracteres.");
+    expect(passwordProblem("123456")).toBeNull();
+  });
+
+  it("cobra um mínimo maior quando a senha é definida por outra pessoa", () => {
+    expect(passwordProblem("1234567", { minLength: MIN_TEMP_PASSWORD_LENGTH })).toBe(
+      "A senha deve ter pelo menos 8 caracteres.",
+    );
+    expect(passwordProblem("12345678", { minLength: MIN_TEMP_PASSWORD_LENGTH })).toBeNull();
+  });
+
+  it("exige que a confirmação bata quando ela é informada", () => {
+    expect(passwordProblem("senhaboa", { confirm: "senharuim" })).toBe("As senhas não coincidem.");
+    expect(passwordProblem("senhaboa", { confirm: "senhaboa" })).toBeNull();
+  });
+
+  it("checa o tamanho antes da confirmação, para a mensagem ser a mais útil", () => {
+    expect(passwordProblem("123", { confirm: "outra" })).toBe(
+      "A senha deve ter pelo menos 6 caracteres.",
+    );
   });
 });

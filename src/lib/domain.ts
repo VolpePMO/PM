@@ -224,6 +224,35 @@ export function deactivationBlockedReason(user: ManagedUser, users: ManagedUser[
   return null;
 }
 
+/** Tamanho mínimo de uma senha definida pelo próprio usuário. É o mínimo que o
+ *  Supabase aceita por padrão. */
+export const MIN_PASSWORD_LENGTH = 6;
+
+/** Uma senha temporária definida por outra pessoa é mais exposta: ela trafega
+ *  por chat ou e-mail e, no reset em massa, vale para várias contas ao mesmo
+ *  tempo. Por isso o mínimo aqui é maior. */
+export const MIN_TEMP_PASSWORD_LENGTH = 8;
+
+/**
+ * Motivo pelo qual a senha não serve, ou null quando está boa.
+ *
+ * `confirm` é opcional: quando vem, precisa bater. Deixar a validação aqui
+ * (e não espalhada nos formulários) mantém a mesma regra na tela de troca, no
+ * cadastro de conta e no reset em massa.
+ */
+export function passwordProblem(
+  password: string,
+  options: { minLength?: number; confirm?: string } = {},
+): string | null {
+  const min = options.minLength ?? MIN_PASSWORD_LENGTH;
+  if (password.trim().length === 0) return "Informe uma senha.";
+  if (password.length < min) return `A senha deve ter pelo menos ${min} caracteres.`;
+  if (options.confirm !== undefined && password !== options.confirm) {
+    return "As senhas não coincidem.";
+  }
+  return null;
+}
+
 /** Iniciais para o fallback do avatar. */
 export function initials(name: string | null | undefined): string {
   const parts = (name ?? "").trim().split(/\s+/).filter(Boolean);
