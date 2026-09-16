@@ -3,10 +3,16 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
-import { createUserAccount, deleteUserAccount } from "@/lib/users-admin.functions";
+import {
+  createUserAccount,
+  deleteUserAccount,
+  resetAllPasswords,
+  setUserPassword,
+} from "@/lib/users-admin.functions";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Trash2 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { KeyRound, ShieldAlert, Trash2 } from "lucide-react";
 import { UserAvatar } from "@/components/UserAvatar";
 import { AvatarUpload } from "@/components/AvatarUpload";
 import { Badge } from "@/components/ui/badge";
@@ -21,16 +27,21 @@ import {
 } from "@/components/ui/select";
 import {
   Dialog,
+  DialogClose,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import {
+  MIN_TEMP_PASSWORD_LENGTH,
   ROLE_LABELS,
   deactivationBlockedReason,
   isProtectedAccount,
+  passwordProblem,
   roleChangeBlockedReason,
   type ManagedUser,
 } from "@/lib/domain";
@@ -208,10 +219,10 @@ function AdminUsersPage() {
                 id="new-password"
                 type="password"
                 required
-                minLength={6}
+                minLength={MIN_TEMP_PASSWORD_LENGTH}
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="mínimo 6 caracteres"
+                placeholder={`mínimo ${MIN_TEMP_PASSWORD_LENGTH} caracteres`}
               />
             </div>
             <Button type="submit" disabled={createUser.isPending}>
@@ -297,6 +308,8 @@ function AdminUsersPage() {
                 </DialogContent>
               </Dialog>
 
+              {canManageAccounts && <ChangePasswordDialog user={user} />}
+
               {canManageAccounts && !isProtectedAccount(user.email) && (
                 <Button
                   size="sm"
@@ -321,6 +334,222 @@ function AdminUsersPage() {
           );
         })}
       </div>
+
+      {canManageAccounts && <ResetAllPasswordsCard total={rows.length} />}
     </div>
+  );
+}
+
+/**
+ * Troca a senha de uma conta específica. Fica atrás de um diálogo de propósito:
+ * é uma ação destrutiva e não deve ficar a um clique de distância na listagem.
+ */
+function ChangePasswordDialog({ user }: { user: Row }) {
+  const [open, setOpen] = useState(false);
+  const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [forceChange, setForceChange] = useState(true);
+  const setPasswordFn = useServerFn(setUserPassword);
+
+  const save = useMutation({
+    mutationFn: async () => {
+      const problem = passwordProblem(password, {
+        minLength: MIN_TEMP_PASSWORD_LENGTH,
+        confirm,
+      });
+      if (problem) throw new Error(problem);
+      return setPasswordFn({ data: { userId: user.id, password, forceChange } });
+    },
+    onSuccess: () => {
+      toast.success(`Senha de ${user.display_name ?? user.email} atualizada.`);
+      setPassword("");
+      setConfirm("");
+      setOpen(false);
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button size="sm" variant="outline">
+          <KeyRound className="mr-1 h-4 w-4" />
+          Senha
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Alterar senha</DialogTitle>
+          <DialogDescription>
+            {user.display_name ?? user.email}. A pessoa não é avisada por e-mail — combine a nova
+            senha com ela por um canal seguro.
+          </DialogDescription>
+        </DialogHeader>
+
+        <form
+          className="space-y-4"
+          onSubmit={(e) => {
+            e.preventDefault();
+            save.mutate();
+          }}
+        >
+          <div className="space-y-1.5">
+            <Label htmlFor={`pwd-${user.id}`}>Nova senha</Label>
+            <Input
+              id={`pwd-${user.id}`}
+              type="password"
+              autoComplete="new-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder={`mínimo ${MIN_TEMP_PASSWORD_LENGTH} caracteres`}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor={`pwd2-${user.id}`}>Confirmar</Label>
+            <Input
+              id={`pwd2-${user.id}`}
+              type="password"
+              autoComplete="new-password"
+              value={confirm}
+              onChange={(e) => setConfirm(e.target.value)}
+            />
+          </div>
+          <label className="flex items-start gap-2.5 text-sm">
+            <Checkbox
+              checked={forceChange}
+              onCheckedChange={(v) => setForceChange(v === true)}
+              className="mt-0.5"
+            />
+            <span className="text-muted-foreground">
+              Obrigar a definir uma senha própria no próximo acesso
+            </span>
+          </label>
+
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button type="button" variant="ghost">
+                Cancelar
+              </Button>
+            </DialogClose>
+            <Button type="submit" disabled={save.isPending}>
+              {save.isPending ? "Salvando…" : "Alterar senha"}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/**
+ * Reset em massa. Pede a palavra RESETAR digitada à mão porque o botão atinge
+ * todas as contas de uma vez, inclusive a de quem está clicando.
+ */
+function ResetAllPasswordsCard({ total }: { total: number }) {
+  const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [typed, setTyped] = useState("");
+  const [report, setReport] = useState<{
+    total: number;
+    updated: number;
+    failed: { email: string; reason: string }[];
+  } | null>(null);
+  const resetFn = useServerFn(resetAllPasswords);
+
+  const confirmed = typed.trim().toUpperCase() === "RESETAR";
+
+  const run = useMutation({
+    mutationFn: async () => {
+      const problem = passwordProblem(password, {
+        minLength: MIN_TEMP_PASSWORD_LENGTH,
+        confirm,
+      });
+      if (problem) throw new Error(problem);
+      return resetFn({ data: { password, confirm } });
+    },
+    onSuccess: (result) => {
+      setReport(result);
+      setPassword("");
+      setConfirm("");
+      setTyped("");
+      toast.success(`${result.updated} de ${result.total} senhas redefinidas.`);
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <Card className="space-y-4 border-destructive/30 p-4">
+      <div className="flex items-start gap-3">
+        <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0 text-destructive" />
+        <div>
+          <h2 className="font-medium text-destructive">Resetar a senha de todas as contas</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Aplica a mesma senha temporária às {total} contas e obriga cada pessoa a definir a sua
+            no próximo acesso. <strong>A sua conta entra no reset.</strong> Guarde a senha antes de
+            confirmar: ela não aparece em lugar nenhum depois.
+          </p>
+        </div>
+      </div>
+
+      <form
+        className="grid gap-3 sm:grid-cols-[1fr_1fr_1fr_auto] sm:items-end"
+        onSubmit={(e) => {
+          e.preventDefault();
+          run.mutate();
+        }}
+      >
+        <div className="space-y-1.5">
+          <Label htmlFor="reset-password">Senha temporária</Label>
+          <Input
+            id="reset-password"
+            type="text"
+            autoComplete="off"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder={`mínimo ${MIN_TEMP_PASSWORD_LENGTH} caracteres`}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="reset-confirm">Confirmar</Label>
+          <Input
+            id="reset-confirm"
+            type="text"
+            autoComplete="off"
+            value={confirm}
+            onChange={(e) => setConfirm(e.target.value)}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="reset-typed">Digite RESETAR</Label>
+          <Input
+            id="reset-typed"
+            autoComplete="off"
+            value={typed}
+            onChange={(e) => setTyped(e.target.value)}
+            placeholder="RESETAR"
+          />
+        </div>
+        <Button type="submit" variant="destructive" disabled={!confirmed || run.isPending}>
+          {run.isPending ? "Redefinindo…" : "Resetar todas"}
+        </Button>
+      </form>
+
+      {report && (
+        <div className="rounded-lg border border-border bg-muted p-3 text-sm">
+          <p>
+            {report.updated} de {report.total} contas redefinidas.
+          </p>
+          {report.failed.length > 0 && (
+            <ul className="mt-2 space-y-1 text-destructive">
+              {report.failed.map((f) => (
+                <li key={f.email}>
+                  {f.email}: {f.reason}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+    </Card>
   );
 }
